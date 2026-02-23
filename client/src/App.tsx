@@ -2,6 +2,7 @@ import { ChatPanel } from "./features/room/components/ChatPanel";
 import { NicknameModal } from "./features/room/components/NicknameModal";
 import { PresencePanel } from "./features/room/components/PresencePanel";
 import { useRoom } from "./features/room/useRoom";
+import { QueuePanel } from "./features/room/components/QueuePanel";
 
 const layoutStyle = {
   fontFamily: "system-ui",
@@ -11,7 +12,16 @@ const layoutStyle = {
 } as const;
 
 export default function App() {
-  const { connected, joined, room, join, joinError, sendChat } = useRoom();
+  const {
+    connected,
+    joined,
+    room,
+    join,
+    joinError,
+    sendChat,
+    addToQueue,
+    queueError,
+  } = useRoom();
   const showNicknameModal = connected && !joined;
 
   if (!room) {
@@ -36,18 +46,33 @@ export default function App() {
   }
 
   return (
-    <div style={layoutStyle}>
-      <div
-        style={{
-          marginTop: 16,
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 12,
-        }}
-      >
+    <div
+      style={{
+        marginTop: 16,
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 12,
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <PresencePanel leaderId={room.leaderId} members={room.members} />
-        <ChatPanel messages={room.chat} onSend={sendChat} />
+        <QueuePanel queue={room.queue} onAdd={addToQueue} error={queueError} />
+        <div
+          style={{
+            border: "1px solid #ddd",
+            borderRadius: 8,
+            padding: 12,
+            color: "#666",
+          }}
+        >
+          x{" "}
+          {room.playback.currentVideoId
+            ? "재생중(다음 단계에서 구현)"
+            : "재생할 영상이 없습니다. 유튜브 링크를 추가해주세요."}
+        </div>
       </div>
+
+      <ChatPanel messages={room.chat} onSend={sendChat} />
     </div>
   );
 }

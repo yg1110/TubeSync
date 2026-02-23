@@ -5,6 +5,8 @@ import type {
   RoomStateView,
   Member,
   ChatMessage,
+  QueueAddRejectedReason,
+  QueueItem,
 } from "./types";
 
 export function useRoom() {
@@ -13,6 +15,9 @@ export function useRoom() {
 
   const [room, setRoom] = useState<RoomStateView | null>(null);
   const [joinError, setJoinError] = useState<JoinRejectedReason | null>(null);
+  const [queueError, setQueueError] = useState<QueueAddRejectedReason | null>(
+    null,
+  );
 
   useEffect(() => {
     const onConnect = () => setConnected(true);
@@ -62,6 +67,16 @@ export function useRoom() {
       });
     };
 
+    const onQueueUpdate = (payload: { queue: QueueItem[] }) => {
+      setRoom((prev) => (prev ? { ...prev, queue: payload.queue } : prev));
+    };
+
+    const onQueueAddRejected = (payload: {
+      reason: QueueAddRejectedReason;
+    }) => {
+      setQueueError(payload.reason);
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("JOIN_ACCEPTED", onJoinAccepted);
@@ -69,6 +84,8 @@ export function useRoom() {
     socket.on("ROOM_STATE", onRoomState);
     socket.on("MEMBERS_UPDATE", onMembersUpdate);
     socket.on("CHAT_BROADCAST", onChatBroadcast);
+    socket.on("QUEUE_UPDATE", onQueueUpdate);
+    socket.on("QUEUE_ADD_REJECTED", onQueueAddRejected);
 
     return () => {
       socket.off("connect", onConnect);
@@ -78,6 +95,8 @@ export function useRoom() {
       socket.off("ROOM_STATE", onRoomState);
       socket.off("MEMBERS_UPDATE", onMembersUpdate);
       socket.off("CHAT_BROADCAST", onChatBroadcast);
+      socket.off("QUEUE_UPDATE", onQueueUpdate);
+      socket.off("QUEUE_ADD_REJECTED", onQueueAddRejected);
     };
   }, []);
 
@@ -88,6 +107,19 @@ export function useRoom() {
   const sendChat = (text: string) => {
     socket.emit("CHAT_SEND", { text });
   };
+  const addToQueue = (youtubeUrl: string) => {
+    setQueueError(null);
+    socket.emit("QUEUE_ADD", { youtubeUrl });
+  };
 
-  return { connected, joined, room, join, joinError, sendChat };
+  return {
+    connected,
+    joined,
+    room,
+    join,
+    joinError,
+    sendChat,
+    addToQueue,
+    queueError,
+  };
 }

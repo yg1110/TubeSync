@@ -75,4 +75,19 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.server.emit('CHAT_BROADCAST', { message: msg });
   }
+
+  @SubscribeMessage('QUEUE_ADD')
+  onQueueAdd(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() body: { youtubeUrl: string },
+  ) {
+    const res = this.logic.addQueue(socket.id, body?.youtubeUrl);
+
+    if (!res.ok) {
+      socket.emit('QUEUE_ADD_REJECTED', { reason: res.reason });
+      return;
+    }
+
+    this.server.emit('QUEUE_UPDATE', { queue: this.state.queue });
+  }
 }

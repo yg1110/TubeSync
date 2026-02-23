@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { RoomStateService } from './room.state.service';
-import { JoinRejectedReason, SocketId, Member } from './room.types';
+import {
+  JoinRejectedReason,
+  SocketId,
+  Member,
+  QueueAddRejectedReason,
+} from './room.types';
+import { parseYoutubeVideoId } from './youtube-parse.util';
 
 function isValidNickname(raw: string): boolean {
   const nick = (raw ?? '').trim();
@@ -46,5 +52,19 @@ export class RoomLogicService {
     if (!text || text.length > 300) return { ok: false };
 
     return { ok: true, nickname: member.nickname, text };
+  }
+
+  addQueue(
+    socketId: SocketId,
+    youtubeUrl: string,
+  ): { ok: true } | { ok: false; reason: QueueAddRejectedReason } {
+    const member = this.state.members.find((m) => m.id === socketId);
+    if (!member) return { ok: false, reason: 'INVALID_URL' };
+
+    const videoId = parseYoutubeVideoId(youtubeUrl);
+    if (!videoId) return { ok: false, reason: 'INVALID_URL' };
+
+    this.state.enqueue(videoId, member.nickname);
+    return { ok: true };
   }
 }

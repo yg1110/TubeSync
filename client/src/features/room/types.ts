@@ -1,7 +1,7 @@
 export type SocketId = string;
 
 export type JoinRejectedReason = "NICKNAME_TAKEN" | "INVALID_NICKNAME";
-
+export type QueueAddRejectedReason = "INVALID_URL";
 export interface Member {
   id: SocketId;
   nickname: string;

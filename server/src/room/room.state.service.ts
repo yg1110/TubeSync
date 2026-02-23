@@ -56,4 +56,15 @@ export class RoomStateService {
   private genId(prefix: string): string {
     return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   }
+
+  enqueue(videoId: string, addedBy: string): QueueItem {
+    const item: QueueItem = {
+      id: this.genId('q'),
+      videoId,
+      addedBy,
+      addedAtMs: Date.now(),
+    };
+    this.queue.push(item);
+    return item;
+  }
 }
