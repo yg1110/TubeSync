@@ -36,4 +36,24 @@ export class RoomStateService {
       skipVote: this.skipVote,
     };
   }
+
+  pushChat(msg: ChatMessage) {
+    this.chat.push(msg);
+    if (this.chat.length > 50) {
+      this.chat.splice(0, this.chat.length - 50);
+    }
+  }
+
+  makeSystemMessage(text: string): ChatMessage {
+    return {
+      id: this.genId('msg'),
+      nickname: 'SYSTEM',
+      text,
+      tsMs: Date.now(),
+    };
+  }
+
+  private genId(prefix: string): string {
+    return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  }
 }

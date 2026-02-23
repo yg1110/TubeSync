@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { socket } from "../../api/socket";
-import type { JoinRejectedReason, RoomStateView, Member } from "./types";
+import type {
+  JoinRejectedReason,
+  RoomStateView,
+  Member,
+  ChatMessage,
+} from "./types";
 
 export function useRoom() {
   const [connected, setConnected] = useState(socket.connected);
@@ -44,12 +49,26 @@ export function useRoom() {
       });
     };
 
+    const onChatBroadcast = (payload: { message: ChatMessage }) => {
+      setRoom((prev) => {
+        if (!prev) return prev;
+        const nextChat = [...prev.chat, payload.message];
+        // 안전하게 50개 유지(서버도 유지하지만, 클라에서도 한번 더)
+        const trimmed =
+          nextChat.length > 50
+            ? nextChat.slice(nextChat.length - 50)
+            : nextChat;
+        return { ...prev, chat: trimmed };
+      });
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("JOIN_ACCEPTED", onJoinAccepted);
     socket.on("JOIN_REJECTED", onJoinRejected);
     socket.on("ROOM_STATE", onRoomState);
     socket.on("MEMBERS_UPDATE", onMembersUpdate);
+    socket.on("CHAT_BROADCAST", onChatBroadcast);
 
     return () => {
       socket.off("connect", onConnect);
@@ -58,6 +77,7 @@ export function useRoom() {
       socket.off("JOIN_REJECTED", onJoinRejected);
       socket.off("ROOM_STATE", onRoomState);
       socket.off("MEMBERS_UPDATE", onMembersUpdate);
+      socket.off("CHAT_BROADCAST", onChatBroadcast);
     };
   }, []);
 
@@ -65,5 +85,9 @@ export function useRoom() {
     socket.emit("JOIN", { nickname });
   };
 
-  return { connected, joined, room, join, joinError };
+  const sendChat = (text: string) => {
+    socket.emit("CHAT_SEND", { text });
+  };
+
+  return { connected, joined, room, join, joinError, sendChat };
 }

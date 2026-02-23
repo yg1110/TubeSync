@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RoomStateService } from './room.state.service';
-import { JoinRejectedReason, SocketId } from './room.types';
+import { JoinRejectedReason, SocketId, Member } from './room.types';
 
 function isValidNickname(raw: string): boolean {
   const nick = (raw ?? '').trim();
@@ -33,5 +33,18 @@ export class RoomLogicService {
     const idx = this.state.members.findIndex((m) => m.id === socketId);
     if (idx >= 0) this.state.members.splice(idx, 1);
     this.state.recomputeLeader();
+  }
+
+  addChat(
+    socketId: SocketId,
+    textRaw: string,
+  ): { ok: true; nickname: string; text: string } | { ok: false } {
+    const member = this.state.members.find((m: Member) => m.id === socketId);
+    if (!member) return { ok: false };
+
+    const text = (textRaw ?? '').trim();
+    if (!text || text.length > 300) return { ok: false };
+
+    return { ok: true, nickname: member.nickname, text };
   }
 }

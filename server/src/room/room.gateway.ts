@@ -10,6 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { RoomLogicService } from './room.logic.service';
 import { RoomStateService } from './room.state.service';
+import { ChatMessage } from './room.types';
 
 @WebSocketGateway({
   cors: { origin: true, credentials: true },
@@ -53,5 +54,25 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       leaderId: this.state.leaderId,
       members: this.state.members,
     });
+  }
+
+  @SubscribeMessage('CHAT_SEND')
+  onChatSend(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() body: { text: string },
+  ) {
+    const res = this.logic.addChat(socket.id, body?.text);
+    if (!res.ok) return;
+
+    const msg: ChatMessage = {
+      id: `msg_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      nickname: res.nickname,
+      text: res.text,
+      tsMs: Date.now(),
+    };
+
+    this.state.pushChat(msg);
+
+    this.server.emit('CHAT_BROADCAST', { message: msg });
   }
 }
