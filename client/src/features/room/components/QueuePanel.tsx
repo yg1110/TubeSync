@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { ListMusic, Plus } from "lucide-react";
 import type { QueueAddRejectedReason, QueueItem } from "../types";
 
 function errorMessage(e: QueueAddRejectedReason) {
-  return e === "INVALID_URL"
-    ? "유효한 유튜브 링크가 아닙니다."
-    : "큐 추가 실패";
+  return e === "INVALID_URL" ? "유효한 유튜브 링크가 아닙니다." : "큐 추가 실패";
 }
 
 export function QueuePanel(props: {
@@ -14,54 +14,79 @@ export function QueuePanel(props: {
 }) {
   const [url, setUrl] = useState("");
 
-  return (
-    <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 12 }}>
-      <b>재생 큐</b>
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = url.trim();
+    if (!v) return;
+    props.onAdd(v);
+    setUrl("");
+  };
 
-      <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ListMusic size={18} className="text-red-500" />
+          <h2 className="text-sm font-bold text-white uppercase tracking-widest">
+            Up Next
+          </h2>
+        </div>
+        <span className="text-xs text-gray-500">
+          {props.queue.length} videos in queue
+        </span>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex gap-2">
         <input
+          type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="유튜브 URL을 입력하세요"
-          style={{ flex: 1, padding: 10 }}
+          placeholder="Paste YouTube URL here..."
+          className="flex-1 bg-[#151619] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
         />
         <button
-          onClick={() => {
-            const v = url.trim();
-            if (!v) return;
-            props.onAdd(v);
-            setUrl("");
-          }}
-          style={{ padding: "10px 14px" }}
+          type="submit"
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-lg shadow-red-600/10"
         >
-          추가
+          <Plus size={18} />
+          <span className="text-sm font-semibold">Add</span>
         </button>
-      </div>
+      </form>
 
       {props.error && (
-        <div style={{ marginTop: 8, color: "crimson", fontSize: 13 }}>
-          {errorMessage(props.error)}
-        </div>
+        <p className="text-red-500 text-xs">{errorMessage(props.error)}</p>
       )}
 
-      <div style={{ marginTop: 10, fontSize: 13, color: "#666" }}>
-        {props.queue.length === 0
-          ? "큐가 비어 있습니다."
-          : `대기 영상 ${props.queue.length}개`}
+      <div className="space-y-2">
+        <AnimatePresence mode="popLayout">
+          {props.queue.map((video, idx) => (
+            <motion.div
+              key={video.id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="flex items-center gap-4 bg-[#151619]/50 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors group"
+            >
+              <div className="w-8 h-8 bg-black rounded flex items-center justify-center text-xs font-mono text-gray-600 shrink-0">
+                {idx + 1}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm text-gray-300 truncate group-hover:text-white transition-colors font-mono">
+                  {video.videoId}
+                </h4>
+                <p className="text-[10px] text-gray-500 mt-0.5 uppercase tracking-tighter">
+                  Added by {video.addedBy}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {props.queue.length === 0 && (
+          <p className="text-center py-8 text-sm text-gray-600 italic">
+            The queue is empty.
+          </p>
+        )}
       </div>
-
-      <ol style={{ marginTop: 8, paddingLeft: 18 }}>
-        {props.queue.map((q) => (
-          <li key={q.id} style={{ marginBottom: 6 }}>
-            <div>
-              <code>{q.videoId}</code>
-            </div>
-            <div style={{ fontSize: 12, color: "#666" }}>
-              added by <b>{q.addedBy}</b>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </div>
+    </section>
   );
 }

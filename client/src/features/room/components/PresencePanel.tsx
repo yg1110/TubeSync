@@ -1,23 +1,38 @@
+import { Users, Crown } from "lucide-react";
 import type { Member, SocketId } from "../types";
 
 export function PresencePanel(props: {
   leaderId: SocketId | null;
   members: Member[];
+  myId?: string;
 }) {
-  return (
-    <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <b>접속자</b>
-        <span>{props.members.length}명</span>
-      </div>
+  const myId = props.myId ?? "";
 
-      <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-4">
+        <Users size={16} className="text-gray-500" />
+        <h2 className="text-xs font-bold text-white uppercase tracking-widest">
+          Participants
+        </h2>
+      </div>
+      <div className="flex flex-wrap gap-2">
         {props.members.map((m) => (
-          <li key={m.id}>
-            {m.nickname} {props.leaderId === m.id ? "👑" : ""}
-          </li>
+          <div
+            key={m.id}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
+              m.id === myId
+                ? "bg-red-600/10 border-red-600/30 text-red-400"
+                : "bg-white/5 border-white/10 text-gray-400"
+            }`}
+          >
+            {props.leaderId === m.id && (
+              <Crown size={12} className="text-yellow-500" />
+            )}
+            {m.nickname}
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

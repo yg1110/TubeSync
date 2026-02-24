@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PlaybackState, SyncTickPayload, SocketId } from "../types";
+import { ListMusic, SkipForward } from "lucide-react";
+import type {
+  PlaybackState,
+  QueueItem,
+  SyncTickPayload,
+  SocketId,
+} from "../types";
 import { getPlaybackPositionSec } from "../types";
 import { socket } from "../../../api/socket";
 import {
@@ -9,8 +15,12 @@ import {
 
 const DRIFT_THRESHOLD_SEC = 1.5;
 
+/** YT.PlayerState.PLAYING = 1 */
+const YT_PLAYING = 1;
+
 export function VideoStage(props: {
   playback: PlaybackState;
+  queue?: QueueItem[];
   leaderId: SocketId | null;
   lastPlaybackServerNowMs?: number;
   onPlayPauseToggle: () => void;
@@ -18,30 +28,49 @@ export function VideoStage(props: {
 }) {
   const playerRef = useRef<YouTubePlayerState | null>(null);
   const [ready, setReady] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [videoTitle, setVideoTitle] = useState<string | null>(null);
 
   const serverTimeRef = useRef<{ serverMs: number; clientMs: number }>({
     serverMs: 0,
     clientMs: 0,
   });
   const appliedVideoIdRef = useRef<string | null>(null);
-  /** 프로그레스바용 서버 시각(추정). effect/interval에서만 갱신 */
-  const [displayServerTimeMs, setDisplayServerTimeMs] = useState(0);
+  const [, setDisplayServerTimeMs] = useState(0);
 
   const elementId = useMemo(() => "yt-player", []);
-
-  useEffect(() => {
-    if (serverTimeRef.current.serverMs === 0) {
-      const t = Date.now();
-      serverTimeRef.current = { serverMs: t, clientMs: t };
-      const id = setTimeout(() => setDisplayServerTimeMs(t), 0);
-      return () => clearTimeout(id);
-    }
-  }, []);
 
   const isValidVideoId = (id: string | null): id is string =>
     !!id && /^[A-Za-z0-9_-]{11}$/.test(id);
 
   const shouldMountPlayer = isValidVideoId(props.playback.currentVideoId);
+
+  // 유튜브 제목 oEmbed 조회
+  useEffect(() => {
+    const id = props.playback.currentVideoId;
+    if (!isValidVideoId(id)) {
+      const t = setTimeout(() => setVideoTitle(null), 0);
+      return () => clearTimeout(t);
+    }
+    let cancelled = false;
+    const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`;
+    fetch(url)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { title?: string } | null) => {
+        if (!cancelled && data?.title) setVideoTitle(data.title);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [props.playback.currentVideoId]);
+
+  const currentAddedBy =
+    props.playback.currentVideoId && props.queue?.length
+      ? props.queue.find(
+          (item) => item.videoId === props.playback.currentVideoId,
+        )?.addedBy
+      : undefined;
 
   useEffect(() => {
     if (!shouldMountPlayer) return;
@@ -83,10 +112,11 @@ export function VideoStage(props: {
       cancelled = true;
       playerRef.current = null;
       setReady(false);
+      setShowOverlay(false);
     };
   }, [elementId, shouldMountPlayer, props.playback.currentVideoId]);
 
-  // 서버 재생 상태 반영: 영상이 바뀌었으면 loadVideoById, 같으면 seekTo + 재생/일시정지
+  // 서버 재생 상태 반영
   useEffect(() => {
     if (!ready) return;
     const player = playerRef.current;
@@ -101,7 +131,6 @@ export function VideoStage(props: {
         serverMs: lastPlaybackServerNowMs,
         clientMs: clientNow,
       };
-      queueMicrotask(() => setDisplayServerTimeMs(lastPlaybackServerNowMs));
     }
 
     const shouldBeSec = getPlaybackPositionSec(playback, serverNow);
@@ -135,6 +164,24 @@ export function VideoStage(props: {
     props.lastPlaybackServerNowMs,
     ready,
   ]);
+
+  // Autoplay blocked: show click overlay
+  useEffect(() => {
+    if (!ready || !playerRef.current || !shouldMountPlayer) return;
+    const t = setTimeout(() => {
+      try {
+        if (
+          playerRef.current?.getPlayerState() !== YT_PLAYING &&
+          !props.playback.isPaused
+        ) {
+          setShowOverlay(true);
+        }
+      } catch {
+        // ignore
+      }
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [ready, shouldMountPlayer, props.playback.isPaused]);
 
   // SYNC_TICK: 서버 시각으로 드리프트 보정
   useEffect(() => {
@@ -185,7 +232,7 @@ export function VideoStage(props: {
     };
   }, [ready, props.playback]);
 
-  // 프로그레스바가 재생 중일 때 매끄럽게 움직이도록: 서버 시각 추정 + 주기적 리렌더
+  // 프로그레스바용 서버 시각 추정
   useEffect(() => {
     if (!props.playback.currentVideoId || props.playback.isPaused) return;
     const id = setInterval(() => {
@@ -195,97 +242,69 @@ export function VideoStage(props: {
     return () => clearInterval(id);
   }, [props.playback.currentVideoId, props.playback.isPaused]);
 
-  const currentPositionSec =
-    getPlaybackPositionSec(props.playback, displayServerTimeMs) ?? 0;
-
-  const [durationSec, setDurationSec] = useState(0);
-  useEffect(() => {
-    if (!ready || !playerRef.current) return;
-    const resetId = setTimeout(() => setDurationSec(0), 0);
-    let cancelled = false;
-    const applyDuration = (d: number) => {
-      if (!cancelled && typeof d === "number" && d > 0) setDurationSec(d);
-    };
-    const t = setInterval(() => {
-      try {
-        const d = playerRef.current?.getDuration();
-        if (typeof d === "number" && d > 0) applyDuration(d);
-      } catch {
-        // ignore
-      }
-    }, 500);
-    return () => {
-      cancelled = true;
-      clearTimeout(resetId);
-      clearInterval(t);
-    };
-  }, [ready, props.playback.currentVideoId]);
-
-  const formatTime = (sec: number, unknown = false) => {
-    if (unknown || sec <= 0) return "--:--";
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
+  if (!shouldMountPlayer) {
+    return (
+      <div className="w-full aspect-video bg-[#151619] rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-4 text-center p-8">
+        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
+          <ListMusic className="text-gray-600" size={32} />
+        </div>
+        <div>
+          <h3 className="text-white font-medium">No video playing</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Add a YouTube link to the queue to start watching together.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 12 }}>
-      <b>영상</b>
-
-      {!shouldMountPlayer ? (
-        <div style={{ marginTop: 10, color: "#666" }}>
-          재생할 영상이 없습니다. 유튜브 링크를 추가해주세요.
+    <section className="space-y-4">
+      <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
+        <div className="absolute inset-0 z-0">
+          <div id={elementId} className="w-full h-full" />
         </div>
-      ) : (
-        <div style={{ marginTop: 10, position: "relative" }}>
-          <div style={{ position: "relative" }}>
-            <div id={elementId} />
-            {/* 유튜브 영상 클릭(일시정지/시간이동) 방지: iframe 위에 오버레이 */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                pointerEvents: "all",
-                zIndex: 1,
-              }}
-              aria-hidden
-            />
-          </div>
-
+        {/* 클릭(일시정지/시간이동) 방지: iframe 위 오버레이 - 터치만 막고 오버레이 표시 시에는 클릭 통과 */}
+        {!showOverlay && (
           <div
-            style={{
-              marginTop: 8,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            <span style={{ fontSize: 12, color: "#666" }}>
-              {props.playback.isPaused ? "일시정지" : "재생 중"}
-            </span>
-            <span style={{ fontSize: 12, color: "#666" }}>
-              {formatTime(currentPositionSec)} /{" "}
-              {formatTime(durationSec, durationSec <= 0)}
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={Math.max(durationSec, 1)}
-              step={1}
-              value={currentPositionSec}
-              readOnly
-              style={{ flex: 1, minWidth: 80, pointerEvents: "none" }}
-              tabIndex={-1}
-              aria-label="재생 위치 (보기 전용)"
-            />
-          </div>
+            className="absolute inset-0 z-[1]"
+            style={{ pointerEvents: "all" }}
+            aria-hidden
+          />
+        )}
+      </div>
 
-          <div style={{ marginTop: 4, fontSize: 12, color: "#666" }}>
-            videoId: <code>{props.playback.currentVideoId}</code>
-          </div>
+      {/* 재생 컨트롤 바 — 유튜브 스타일 */}
+      <div className="flex items-center justify-between bg-[#151619] p-4 rounded-xl border border-white/5">
+        <div className="flex-1 min-w-0">
+          <h2
+            className="text-white font-semibold truncate"
+            title={videoTitle ?? undefined}
+          >
+            {videoTitle ?? props.playback.currentVideoId ?? "—"}
+          </h2>
+          <p className="text-xs text-gray-500 mt-1">
+            추가한 유저 {currentAddedBy ?? "—"}
+          </p>
         </div>
-      )}
-    </div>
+        <div className="flex items-center gap-3 ml-4">
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">
+              Skip Vote
+            </span>
+            <span className="text-sm font-mono text-white">
+              {/* {props.playback.votesCount} / {props.playback.skipThreshold} */}
+            </span>
+          </div>
+          <button
+            // onClick={props.onVoteSkip}
+            className="p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-colors text-white"
+            title="Vote to skip"
+          >
+            <SkipForward size={20} />
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }

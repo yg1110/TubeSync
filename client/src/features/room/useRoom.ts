@@ -13,6 +13,7 @@ import type {
 export function useRoom() {
   const [connected, setConnected] = useState(socket.connected);
   const [joined, setJoined] = useState(false);
+  const [myId, setMyId] = useState<string>("");
 
   const [room, setRoom] = useState<RoomStateView | null>(null);
   const [joinError, setJoinError] = useState<JoinRejectedReason | null>(null);
@@ -21,10 +22,14 @@ export function useRoom() {
   );
 
   useEffect(() => {
-    const onConnect = () => setConnected(true);
+    const onConnect = () => {
+      setConnected(true);
+      setMyId(socket.id ?? "");
+    };
     const onDisconnect = () => {
       setConnected(false);
       setJoined(false);
+      setMyId("");
     };
 
     const onJoinAccepted = () => {
@@ -148,6 +153,7 @@ export function useRoom() {
     connected,
     joined,
     room,
+    myId,
     join,
     joinError,
     sendChat,
