@@ -2,7 +2,7 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 
 # pnpm 사용 (corepack)
 RUN corepack enable
