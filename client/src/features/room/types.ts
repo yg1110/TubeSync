@@ -41,3 +41,7 @@ export interface RoomStateView {
   playback: PlaybackState;
   skipVote: SkipVoteView | null;
 }
+
+export interface SyncTickPayload {
+  serverNowMs: number;
+}

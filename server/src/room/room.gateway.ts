@@ -23,6 +23,10 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly state: RoomStateService,
   ) {}
 
+  getServer(): Server | null {
+    return this.server ?? null;
+  }
+
   handleConnection(socket: Socket) {
     socket.emit('SERVER_HELLO', { socketId: socket.id });
   }

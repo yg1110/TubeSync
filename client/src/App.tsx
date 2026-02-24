@@ -3,6 +3,7 @@ import { NicknameModal } from "./features/room/components/NicknameModal";
 import { PresencePanel } from "./features/room/components/PresencePanel";
 import { useRoom } from "./features/room/useRoom";
 import { QueuePanel } from "./features/room/components/QueuePanel";
+import { VideoStage } from "./features/room/components/VideoStage";
 
 const layoutStyle = {
   fontFamily: "system-ui",
@@ -57,25 +58,7 @@ export default function App() {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <PresencePanel leaderId={room.leaderId} members={room.members} />
         <QueuePanel queue={room.queue} onAdd={addToQueue} error={queueError} />
-        <div
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: 8,
-            padding: 12,
-            color: "#666",
-          }}
-        >
-          {room.playback.currentVideoId ? (
-            <div>
-              <b>재생중</b>
-              <div style={{ marginTop: 6 }}>
-                videoId: <code>{room.playback.currentVideoId}</code>
-              </div>
-            </div>
-          ) : (
-            "재생할 영상이 없습니다. 유튜브 링크를 추가해주세요."
-          )}
-        </div>
+        <VideoStage playback={room.playback} leaderId={room.leaderId} />
       </div>
 
       <ChatPanel messages={room.chat} onSend={sendChat} />
