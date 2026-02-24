@@ -7,6 +7,7 @@ import type {
   ChatMessage,
   QueueAddRejectedReason,
   QueueItem,
+  PlaybackState,
 } from "./types";
 
 export function useRoom() {
@@ -77,6 +78,12 @@ export function useRoom() {
       setQueueError(payload.reason);
     };
 
+    const onPlaybackUpdate = (payload: { playback: PlaybackState }) => {
+      setRoom((prev) =>
+        prev ? { ...prev, playback: payload.playback } : prev,
+      );
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("JOIN_ACCEPTED", onJoinAccepted);
@@ -86,6 +93,7 @@ export function useRoom() {
     socket.on("CHAT_BROADCAST", onChatBroadcast);
     socket.on("QUEUE_UPDATE", onQueueUpdate);
     socket.on("QUEUE_ADD_REJECTED", onQueueAddRejected);
+    socket.on("PLAYBACK_UPDATE", onPlaybackUpdate);
 
     return () => {
       socket.off("connect", onConnect);
@@ -97,6 +105,7 @@ export function useRoom() {
       socket.off("CHAT_BROADCAST", onChatBroadcast);
       socket.off("QUEUE_UPDATE", onQueueUpdate);
       socket.off("QUEUE_ADD_REJECTED", onQueueAddRejected);
+      socket.off("PLAYBACK_UPDATE", onPlaybackUpdate);
     };
   }, []);
 

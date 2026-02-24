@@ -67,4 +67,21 @@ export class RoomStateService {
     this.queue.push(item);
     return item;
   }
+
+  dequeueVideoId(): string | null {
+    const item = this.queue.shift();
+    return item?.videoId ?? null;
+  }
+
+  setPlayback(videoId: string | null, startedAtMs: number | null) {
+    this.playback = { currentVideoId: videoId, videoStartedAtMs: startedAtMs };
+  }
+
+  /**
+   * 다음 단계(투표)에서 채울 placeholder.
+   * 지금은 skipVote를 null로 두거나, 새 영상 시작 시 null로 리셋.
+   */
+  resetSkipVoteFor(videoId: string | null) {
+    this.skipVote = null;
+  }
 }

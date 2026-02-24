@@ -5,6 +5,7 @@ import {
   SocketId,
   Member,
   QueueAddRejectedReason,
+  StartNextReason,
 } from './room.types';
 import { parseYoutubeVideoId } from './youtube-parse.util';
 
@@ -18,6 +19,7 @@ function isValidNickname(raw: string): boolean {
 @Injectable()
 export class RoomLogicService {
   constructor(private readonly state: RoomStateService) {}
+  private startNextInProgress = false;
 
   join(
     socketId: SocketId,
@@ -66,5 +68,49 @@ export class RoomLogicService {
 
     this.state.enqueue(videoId, member.nickname);
     return { ok: true };
+  }
+
+  startNext(reason: StartNextReason): { startedVideoId: string | null } {
+    if (this.startNextInProgress) return { startedVideoId: null };
+
+    this.startNextInProgress = true;
+    try {
+      const nextVideoId = this.state.dequeueVideoId();
+
+      if (!nextVideoId) {
+        // 큐가 비면 대기 상태
+        this.state.setPlayback(null, null);
+        this.state.resetSkipVoteFor(null);
+        // SYSTEM 메시지(선택) - 우리는 포함하기로 확정했으니 넣어도 됨
+        this.state.pushChat(
+          this.state.makeSystemMessage(
+            '재생할 영상이 없습니다. 유튜브 링크를 추가해주세요.',
+          ),
+        );
+        return { startedVideoId: null };
+      }
+
+      // 새 영상 시작
+      this.state.setPlayback(nextVideoId, Date.now());
+      this.state.resetSkipVoteFor(nextVideoId);
+
+      if (reason === 'VOTE_SKIP') {
+        this.state.pushChat(
+          this.state.makeSystemMessage(
+            '스킵 투표가 과반이 되어 다음 영상으로 넘어갑니다.',
+          ),
+        );
+      } else if (reason === 'VIDEO_ERROR') {
+        this.state.pushChat(
+          this.state.makeSystemMessage(
+            '재생 불가 영상이라 다음 영상으로 넘어갑니다.',
+          ),
+        );
+      }
+
+      return { startedVideoId: nextVideoId };
+    } finally {
+      this.startNextInProgress = false;
+    }
   }
 }

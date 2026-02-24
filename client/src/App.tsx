@@ -65,10 +65,16 @@ export default function App() {
             color: "#666",
           }}
         >
-          x{" "}
-          {room.playback.currentVideoId
-            ? "재생중(다음 단계에서 구현)"
-            : "재생할 영상이 없습니다. 유튜브 링크를 추가해주세요."}
+          {room.playback.currentVideoId ? (
+            <div>
+              <b>재생중</b>
+              <div style={{ marginTop: 6 }}>
+                videoId: <code>{room.playback.currentVideoId}</code>
+              </div>
+            </div>
+          ) : (
+            "재생할 영상이 없습니다. 유튜브 링크를 추가해주세요."
+          )}
         </div>
       </div>
 

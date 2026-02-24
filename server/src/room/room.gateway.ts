@@ -88,6 +88,26 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+    // 큐 업데이트 먼저
     this.server.emit('QUEUE_UPDATE', { queue: this.state.queue });
+
+    // 현재 재생이 없으면 즉시 시작
+    if (!this.state.playback.currentVideoId) {
+      const beforeChatLen = this.state.chat.length;
+      this.logic.startNext('QUEUE_FILLED');
+
+      // 큐가 pop되었을 수도 있으니 한번 더 갱신
+      this.server.emit('QUEUE_UPDATE', { queue: this.state.queue });
+
+      // playback 브로드캐스트
+      this.server.emit('PLAYBACK_UPDATE', { playback: this.state.playback });
+
+      // (지금은 투표 없음) skipVote는 null로 브로드캐스트하지 않아도 됨
+
+      // SYSTEM 메시지 등 chat 변화분 브로드캐스트
+      for (let i = beforeChatLen; i < this.state.chat.length; i++) {
+        this.server.emit('CHAT_BROADCAST', { message: this.state.chat[i] });
+      }
+    }
   }
 }
