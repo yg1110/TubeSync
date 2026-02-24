@@ -16,11 +16,20 @@ function isValidNickname(raw: string): boolean {
   return /^[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9 ]+$/.test(nick);
 }
 
+/**
+ * 룸 비즈니스 로직을 담당하는 서비스.
+ * - 닉네임/채팅/큐 추가/재생 제어/스킵 투표 등의 규칙을 캡슐화하고
+ * - 실제 상태 변경은 RoomStateService 를 통해서만 수행한다.
+ */
 @Injectable()
 export class RoomLogicService {
   constructor(private readonly state: RoomStateService) {}
   private startNextInProgress = false;
 
+  /**
+   * 소켓 ID와 닉네임으로 룸에 입장.
+   * - 닉네임 유효성 검사 및 중복 닉네임 방지
+   */
   join(
     socketId: SocketId,
     nicknameRaw: string,
@@ -41,6 +50,10 @@ export class RoomLogicService {
     if (idx >= 0) this.state.members.splice(idx, 1);
   }
 
+  /**
+   * 채팅 추가 전 유효성 검사(회원 여부, 길이 제한 등)만 수행.
+   * 실제 push 는 RoomGateway 에서 ChatMessage 를 만들어 RoomStateService 에 위임.
+   */
   addChat(
     socketId: SocketId,
     textRaw: string,
@@ -54,6 +67,9 @@ export class RoomLogicService {
     return { ok: true, nickname: member.nickname, text };
   }
 
+  /**
+   * 유튜브 URL을 파싱해 영상 ID를 얻고, 큐에 추가한다.
+   */
   addQueue(
     socketId: SocketId,
     youtubeUrl: string,
@@ -68,6 +84,11 @@ export class RoomLogicService {
     return { ok: true };
   }
 
+  /**
+   * 큐에서 다음 영상을 꺼내 재생을 시작한다.
+   * - 큐가 비면 재생 상태를 초기화하고 SYSTEM 메시지 출력
+   * - 동시에 여러 번 호출되지 않도록 startNextInProgress 플래그로 보호
+   */
   startNext(reason: StartNextReason): { startedVideoId: string | null } {
     if (this.startNextInProgress) return { startedVideoId: null };
 
@@ -120,6 +141,9 @@ export class RoomLogicService {
     }
   }
 
+  /**
+   * 스킵 투표를 등록하고, 임계치(과반)를 넘었는지 여부를 반환.
+   */
   voteSkip(socketId: SocketId): { ok: boolean; reached: boolean } {
     const member = this.state.members.find((m) => m.id === socketId);
     if (!member) return { ok: false, reached: false };

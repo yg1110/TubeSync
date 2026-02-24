@@ -49,7 +49,7 @@ export function VideoStage(props: {
     !!id && /^[A-Za-z0-9_-]{11}$/.test(id);
   const shouldMountPlayer = isValidVideoId(props.playback.currentVideoId);
 
-  // 유튜브 제목 oEmbed 조회
+  // 현재 재생 중인 영상의 제목을 유튜브 oEmbed API로 가져와서 UI에 표시
   useEffect(() => {
     const id = props.playback.currentVideoId;
     if (!isValidVideoId(id)) {
@@ -117,7 +117,7 @@ export function VideoStage(props: {
     };
   }, [elementId, shouldMountPlayer, props.playback.currentVideoId]);
 
-  // 서버 재생 상태 반영
+  // 서버 재생 상태(영상 ID, 일시정지 여부)를 플레이어에 반영
   useEffect(() => {
     if (!ready) return;
     const player = playerRef.current;
@@ -184,7 +184,7 @@ export function VideoStage(props: {
     return () => clearTimeout(t);
   }, [ready, shouldMountPlayer, props.playback.isPaused]);
 
-  // SYNC_TICK: 서버 시각으로 드리프트 보정
+  // SYNC_TICK: 서버에서 주기적으로 보내는 시각을 기준으로 드리프트 보정
   useEffect(() => {
     if (!ready) return;
 
@@ -233,7 +233,7 @@ export function VideoStage(props: {
     };
   }, [ready, props.playback]);
 
-  // 프로그레스바용 서버 시각 추정
+  // 프로그레스바용 서버 시각 추정: 마지막으로 받은 서버 시각 + (클라이언트 경과 시간)
   useEffect(() => {
     if (!props.playback.currentVideoId || props.playback.isPaused) return;
     const id = setInterval(() => {

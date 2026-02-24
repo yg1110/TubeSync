@@ -11,6 +11,12 @@ import type {
   SkipVoteView,
 } from "./types";
 
+/**
+ * 룸에 대한 실시간 상태를 관리하는 커스텀 훅.
+ * - socket.io 연결/해제 상태
+ * - JOIN / QUEUE / CHAT / PLAYBACK / SKIP_VOTE 관련 이벤트 바인딩
+ * - 마지막 서버 시각을 포함한 RoomStateView 구성
+ */
 export function useRoom() {
   const [connected, setConnected] = useState(socket.connected);
   const [joined, setJoined] = useState(false);

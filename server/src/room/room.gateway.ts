@@ -27,10 +27,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return this.server ?? null;
   }
 
+  /** 새 소켓이 연결되면 소켓 ID를 알려주고, 이후 JOIN 이벤트를 기다린다. */
   handleConnection(socket: Socket) {
     socket.emit('SERVER_HELLO', { socketId: socket.id });
   }
 
+  /** 소켓이 끊기면 멤버 목록에서 제거하고, 전체에 최신 멤버 리스트를 브로드캐스트한다. */
   handleDisconnect(socket: Socket) {
     this.logic.leave(socket.id);
     this.server.emit('MEMBERS_UPDATE', {
@@ -38,6 +40,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  /** 닉네임으로 룸에 입장 요청 처리 */
   @SubscribeMessage('JOIN')
   onJoin(
     @ConnectedSocket() socket: Socket,
@@ -61,6 +64,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  /** 텍스트 채팅 전송 처리 */
   @SubscribeMessage('CHAT_SEND')
   onChatSend(
     @ConnectedSocket() socket: Socket,
@@ -81,6 +85,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.emit('CHAT_BROADCAST', { message: msg });
   }
 
+  /** 유튜브 URL을 큐에 추가 */
   @SubscribeMessage('QUEUE_ADD')
   onQueueAdd(
     @ConnectedSocket() socket: Socket,
@@ -119,6 +124,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /** 현재 재생 중인 영상의 일시정지/재개 토글 */
   @SubscribeMessage('PLAY_PAUSE_TOGGLE')
   onPlayPauseToggle(@ConnectedSocket() socket: Socket) {
     if (!this.logic.playPauseToggle(socket.id)) return;
@@ -128,6 +134,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  /** 특정 초 위치로 시킹 */
   @SubscribeMessage('PLAY_SEEK')
   onPlaySeek(
     @ConnectedSocket() socket: Socket,
@@ -142,6 +149,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  /** 현재 영상 스킵 투표 */
   @SubscribeMessage('VOTE_SKIP')
   onVoteSkip(@ConnectedSocket() socket: Socket) {
     const res = this.logic.voteSkip(socket.id);
@@ -172,6 +180,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /** 클라이언트가 영상 종료를 감지했을 때 다음 영상 자동 재생 */
   @SubscribeMessage('VIDEO_ENDED')
   onVideoEnded(@ConnectedSocket() socket: Socket) {
     const beforeChatLen = this.state.chat.length;

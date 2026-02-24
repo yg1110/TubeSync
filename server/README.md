@@ -1,98 +1,81 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# TubeSync Backend (`server`)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+TubeSync의 **NestJS + Socket.IO** 기반 WebSocket 서버입니다.  
+단일 룸의 인메모리 상태를 관리하면서, 클라이언트 간 유튜브 재생 상태를 실시간으로 동기화합니다.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 구조 개요
 
-## Description
+- `src/main.ts`
+  - Nest 애플리케이션 부트스트랩
+  - `AppModule` 로부터 서버 시작
+- `src/app.module.ts`
+  - `RoomModule` 등 도메인 모듈을 묶는 루트 모듈
+- `src/room`
+  - `room.gateway.ts`
+    - `@WebSocketGateway` 로 선언된 Socket.IO 게이트웨이
+    - `JOIN`, `CHAT_SEND`, `QUEUE_ADD`, `PLAY_PAUSE_TOGGLE`, `PLAY_SEEK`,
+      `VOTE_SKIP`, `VIDEO_ENDED` 등 클라이언트 이벤트 처리
+  - `room.logic.service.ts`
+    - 닉네임 검증/채팅 검증/큐 추가/재생 제어/스킵 투표 등의 비즈니스 로직
+    - 상태 변경은 모두 `RoomStateService` 에 위임
+  - `room.state.service.ts`
+    - `members`, `chat`, `queue`, `playback`, `skipVote` 를 메모리 상에 보관
+    - 재생 위치 계산, 일시정지/재개/시킹, 스킵 투표 집계 등의 순수 상태 조작 로직
+  - `sync-ticker.service.ts`
+    - 일정 간격으로 `SYNC_TICK` 이벤트를 브로드캐스트
+    - 클라이언트가 서버 기준 시각으로 재생 위치 드리프트를 보정할 수 있도록 지원
+  - `youtube-parse.util.ts`
+    - `watch?v=`, `youtu.be`, `shorts` 등의 URL에서 11자리 유튜브 영상 ID 추출
+  - `room.types.ts`
+    - 서버에서 사용하는 타입 정의 (멤버/채팅/큐/재생/스킵 투표 등)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### 서버 구성 다이어그램 (이미지 자리)
 
-## Project setup
+> Gateway ↔ LogicService ↔ StateService 사이의 흐름과 SYNC_TICK 동작을 설명하는 이미지를 여기에 넣어주세요.
 
-```bash
-$ pnpm install
-```
+![TubeSync Server Architecture]("")
 
-## Compile and run the project
+## 주요 동작 흐름
 
-```bash
-# development
-$ pnpm run start
+1. **입장 & 퇴장**
+   - 클라이언트가 연결되면 `SERVER_HELLO` 로 소켓 ID 전달
+   - `JOIN` 이벤트에서 닉네임 검증 후, 성공 시 `JOIN_ACCEPTED` + 현재 `ROOM_STATE` 전송
+   - 소켓이 끊기면 `leave` 처리 후 `MEMBERS_UPDATE` 브로드캐스트
+2. **채팅**
+   - `CHAT_SEND` → `RoomLogicService.addChat` 으로 검증
+   - 유효하면 `ChatMessage` 생성 후 `RoomStateService.pushChat` + `CHAT_BROADCAST`
+3. **큐 & 재생**
+   - `QUEUE_ADD` → URL 파싱 후 큐에 `enqueue`
+   - 재생 중인 영상이 없으면 `startNext('QUEUE_FILLED')` 로 다음 영상 자동 시작
+   - 영상 종료/스킵 투표 과반 시에도 `startNext(...)` 로 다음 영상으로 전환
+4. **재생 제어 & 동기화**
+   - `PLAY_PAUSE_TOGGLE`, `PLAY_SEEK` 이벤트를 통해 재생/일시정지/시킹 처리
+   - 각 변경 시 `PLAYBACK_UPDATE` 로 최신 `playback` + `serverNowMs` 브로드캐스트
+   - `SyncTickerService` 가 주기적으로 `SYNC_TICK` 을 보내 클라이언트 드리프트 보정 지원
+5. **스킵 투표**
+   - `VOTE_SKIP` 이벤트마다 현재 재생 영상 기준으로 투표 수를 누적
+   - 과반 이상 도달 시 다음 영상으로 이동하고, SYSTEM 메시지로 안내
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## 개발/실행
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+cd server
+
+# 의존성 설치
+pnpm install
+
+# 개발 모드 (watch)
+pnpm start:dev
+
+# 일반 실행
+pnpm start
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+서버는 기본적으로 `http://localhost:3000` 에서 실행되며, Socket.IO 게이트웨이는 동일 포트에서 동작합니다.
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
+## 참고
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- 전체 프로젝트 개요 및 클라이언트 구조는 루트 [`README.md`](../README.md) 와 [`client/README.md`](../client/README.md)를 참고하세요.
 
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

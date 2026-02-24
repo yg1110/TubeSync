@@ -9,6 +9,11 @@ import type {
   SocketId,
 } from './room.types';
 
+/**
+ * 단일 룸의 인메모리 상태를 보관/조작하는 서비스.
+ * - Nest 프로세스 메모리에만 존재하며, 멀티 프로세스/다중 인스턴스 환경에서는
+ *   외부 스토리지(예: Redis)로 대체할 수 있도록 의존성을 분리해 둔다.
+ */
 @Injectable()
 export class RoomStateService {
   members: Member[] = [];

@@ -1,4 +1,4 @@
-import { Users, Crown } from "lucide-react";
+import { Users } from "lucide-react";
 import type { Member } from "../types";
 
 export function PresencePanel(props: { members: Member[]; myId?: string }) {

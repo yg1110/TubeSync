@@ -47,6 +47,11 @@ export function loadYouTubeIframeApi(): Promise<void> {
   return ytReadyPromise;
 }
 
+/**
+ * 컨트롤이 숨겨진 YouTube iframe 플레이어를 생성한다.
+ * - autoplay, disablekb, modestbranding 등 임베드 옵션을 통일해서 적용
+ * - 상위 컴포넌트(예: VideoStage)에서 onReady / onStateChange 콜백으로 제어
+ */
 export async function createYouTubePlayer(params: {
   elementId: string;
   videoId?: string;

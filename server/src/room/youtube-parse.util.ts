@@ -1,3 +1,9 @@
+/**
+ * 다양한 형태의 유튜브 URL에서 11자리 영상 ID 를 추출한다.
+ * - https://www.youtube.com/watch?v=...
+ * - https://youtu.be/...
+ * - https://www.youtube.com/shorts/...
+ */
 export function parseYoutubeVideoId(input: string): string | null {
   const urlStr = (input ?? '').trim();
   if (!urlStr) return null;
