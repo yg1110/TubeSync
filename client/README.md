@@ -26,11 +26,9 @@ TubeSync의 **React + TypeScript + Vite** 기반 프론트엔드입니다.
   - `components/PresencePanel.tsx`: 참가자 목록 표시
   - `components/NicknameModal.tsx`: 최초 입장 시 닉네임 입력 모달
 
-### 화면 구성 다이어그램 (이미지 자리)
+### 화면 구성 다이어그램
 
-> 전체 화면 레이아웃(영상/큐/채팅/참가자 패널)을 설명하는 이미지를 여기에 넣어주세요.
-
-![TubeSync Client Layout]("")
+![TubeSync Client Layout](../img/client-layout.png)
 
 ## 주요 동작 흐름
 
@@ -77,4 +75,3 @@ pnpm lint
 ## 참고
 
 - 전체 프로젝트 개요 및 서버 구조는 루트 [`README.md`](../README.md) 와 [`server/README.md`](../server/README.md)를 참고하세요.
-

@@ -12,11 +12,9 @@
   - 단일 룸의 인메모리 상태 관리
   - 재생 상태/동기화/스킵 투표/큐 로직
 
-### 아키텍처 다이어그램 (이미지 자리)
+### 아키텍처 다이어그램
 
-> 이 리포지토리의 전체 구조를 설명하는 다이어그램을 여기에 넣어주세요.
-
-![TubeSync Architecture]("")
+![TubeSync Architecture](./img/tubesync-layout.png)
 
 ## 실행 방법
 

@@ -29,11 +29,9 @@ TubeSync의 **NestJS + Socket.IO** 기반 WebSocket 서버입니다.
   - `room.types.ts`
     - 서버에서 사용하는 타입 정의 (멤버/채팅/큐/재생/스킵 투표 등)
 
-### 서버 구성 다이어그램 (이미지 자리)
+### 서버 구성 다이어그램
 
-> Gateway ↔ LogicService ↔ StateService 사이의 흐름과 SYNC_TICK 동작을 설명하는 이미지를 여기에 넣어주세요.
-
-![TubeSync Server Architecture]("")
+![TubeSync Server Architecture](../img/server-layout.png)
 
 ## 주요 동작 흐름
 
@@ -78,4 +76,3 @@ pnpm start
 ## 참고
 
 - 전체 프로젝트 개요 및 클라이언트 구조는 루트 [`README.md`](../README.md) 와 [`client/README.md`](../client/README.md)를 참고하세요.
-
