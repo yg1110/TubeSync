@@ -35,6 +35,8 @@ export interface PlaybackState {
   isPaused: boolean;
   /** 일시정지된 시점(서버 시각). isPaused일 때만 사용. 위치 = (pausedAtMs - videoStartedAtMs) / 1000 */
   pausedAtMs: number | null;
+  /** 현재 재생 중인 영상을 추가한 사용자 닉네임 */
+  addedBy: string | null;
 }
 
 export interface SkipVoteView {

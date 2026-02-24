@@ -27,6 +27,7 @@ export interface PlaybackState {
   videoStartedAtMs: number | null;
   isPaused: boolean;
   pausedAtMs: number | null;
+  addedBy: string | null;
 }
 
 export interface SkipVoteView {

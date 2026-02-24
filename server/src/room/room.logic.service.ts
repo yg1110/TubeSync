@@ -6,14 +6,14 @@ import {
   Member,
   QueueAddRejectedReason,
   StartNextReason,
+  QueueItem,
 } from './room.types';
 import { parseYoutubeVideoId } from './youtube-parse.util';
 
 function isValidNickname(raw: string): boolean {
   const nick = (raw ?? '').trim();
   if (nick.length < 2 || nick.length > 12) return false;
-  // 한글/영문/숫자/공백만
-  return /^[가-힣A-Za-z0-9 ]+$/.test(nick);
+  return /^[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9 ]+$/.test(nick);
 }
 
 @Injectable()
@@ -75,9 +75,11 @@ export class RoomLogicService {
 
     this.startNextInProgress = true;
     try {
-      const nextVideoId = this.state.dequeueVideoId();
+      // RoomStateService는 별도 서비스라 eslint가 타입 추론을 완전히 따라가지 못하므로, 여기서는 안전한 래핑 호출임을 명시한다.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+      const nextItem: QueueItem | null = this.state.dequeueNextItem();
 
-      if (!nextVideoId) {
+      if (!nextItem) {
         // 큐가 비면 대기 상태
         this.state.setPlayback(null, null);
         this.state.resetSkipVoteFor(null);
@@ -91,8 +93,14 @@ export class RoomLogicService {
       }
 
       // 새 영상 시작
-      this.state.setPlayback(nextVideoId, Date.now());
-      this.state.resetSkipVoteFor(nextVideoId);
+      this.state.setPlayback(
+        nextItem.videoId,
+        Date.now(),
+        false,
+        null,
+        nextItem.addedBy,
+      );
+      this.state.resetSkipVoteFor(nextItem.videoId);
 
       if (reason === 'VOTE_SKIP') {
         this.state.pushChat(
@@ -108,15 +116,13 @@ export class RoomLogicService {
         );
       }
 
-      return { startedVideoId: nextVideoId };
+      return { startedVideoId: nextItem.videoId };
     } finally {
       this.startNextInProgress = false;
     }
   }
 
-  voteSkip(
-    socketId: SocketId,
-  ): { ok: boolean; reached: boolean } {
+  voteSkip(socketId: SocketId): { ok: boolean; reached: boolean } {
     const member = this.state.members.find((m) => m.id === socketId);
     if (!member) return { ok: false, reached: false };
     if (!this.state.playback.currentVideoId) {

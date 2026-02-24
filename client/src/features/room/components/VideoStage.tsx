@@ -67,13 +67,6 @@ export function VideoStage(props: {
     };
   }, [props.playback.currentVideoId]);
 
-  const currentAddedBy =
-    props.playback.currentVideoId && props.queue?.length
-      ? props.queue.find(
-          (item) => item.videoId === props.playback.currentVideoId,
-        )?.addedBy
-      : undefined;
-
   useEffect(() => {
     if (!shouldMountPlayer) return;
 
@@ -285,9 +278,11 @@ export function VideoStage(props: {
           >
             {videoTitle ?? props.playback.currentVideoId ?? "—"}
           </h2>
-          {/* <p className="text-xs text-gray-500 mt-1">
-            추가한 유저 {currentAddedBy ?? "—"}
-          </p> */}
+          <p className="text-xs text-gray-500 mt-1">
+            {props.playback.addedBy
+              ? `추가한 유저: ${props.playback.addedBy}`
+              : "추가한 유저 정보 없음"}
+          </p>
         </div>
         <div className="flex items-center gap-3 ml-4">
           <div className="flex flex-col items-end">

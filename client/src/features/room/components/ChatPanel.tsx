@@ -15,11 +15,16 @@ export function ChatPanel(props: {
   myNickname: string;
 }) {
   const [text, setText] = useState("");
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [props.messages.length]);
+    const lastMessageId = props.messages[props.messages.length - 1]?.id;
+    if (!lastMessageId) return;
+
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [props.messages[props.messages.length - 1]?.id]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +43,10 @@ export function ChatPanel(props: {
         </h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-y-auto p-4 max-h-[calc(100dvh-285px)] space-y-4 custom-scrollbar"
+      >
         {props.messages.map((msg) => (
           <div key={msg.id} className="flex flex-col gap-1">
             {msg.nickname === "SYSTEM" ? (
@@ -68,7 +76,6 @@ export function ChatPanel(props: {
             )}
           </div>
         ))}
-        <div ref={bottomRef} />
       </div>
 
       <form onSubmit={submit} className="p-4 bg-black/20">

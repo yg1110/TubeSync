@@ -49,7 +49,8 @@ export function useRoom() {
     }) => {
       setRoom({
         ...payload.state,
-        lastPlaybackServerNowMs: payload.serverNowMs ?? payload.state.lastPlaybackServerNowMs,
+        lastPlaybackServerNowMs:
+          payload.serverNowMs ?? payload.state.lastPlaybackServerNowMs,
       });
     };
 
@@ -99,15 +100,14 @@ export function useRoom() {
           ? {
               ...prev,
               playback: payload.playback,
-              lastPlaybackServerNowMs: payload.serverNowMs ?? prev.lastPlaybackServerNowMs,
+              lastPlaybackServerNowMs:
+                payload.serverNowMs ?? prev.lastPlaybackServerNowMs,
             }
           : prev,
       );
     };
 
-    const onSkipVoteUpdate = (payload: {
-      skipVote: SkipVoteView | null;
-    }) => {
+    const onSkipVoteUpdate = (payload: { skipVote: SkipVoteView | null }) => {
       setRoom((prev) =>
         prev
           ? {
@@ -152,6 +152,7 @@ export function useRoom() {
   const sendChat = (text: string) => {
     socket.emit("CHAT_SEND", { text });
   };
+
   const addToQueue = (youtubeUrl: string) => {
     setQueueError(null);
     socket.emit("QUEUE_ADD", { youtubeUrl });

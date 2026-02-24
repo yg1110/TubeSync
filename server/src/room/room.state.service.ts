@@ -21,6 +21,7 @@ export class RoomStateService {
     videoStartedAtMs: null,
     isPaused: false,
     pausedAtMs: null,
+    addedBy: null,
   };
   skipVote: SkipVoteView | null = null;
   private skipVoters = new Set<SocketId>();
@@ -74,9 +75,9 @@ export class RoomStateService {
     return item;
   }
 
-  dequeueVideoId(): string | null {
-    const item = this.queue.shift();
-    return item?.videoId ?? null;
+  dequeueNextItem(): QueueItem | null {
+    const item = this.queue.shift() ?? null;
+    return item;
   }
 
   setPlayback(
@@ -84,12 +85,14 @@ export class RoomStateService {
     startedAtMs: number | null,
     isPaused = false,
     pausedAtMs: number | null = null,
+    addedBy: string | null = null,
   ) {
     this.playback = {
       currentVideoId: videoId,
       videoStartedAtMs: startedAtMs,
       isPaused,
       pausedAtMs,
+      addedBy,
     };
   }
 
