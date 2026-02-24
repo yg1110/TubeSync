@@ -23,6 +23,7 @@ export class RoomStateService {
     pausedAtMs: null,
   };
   skipVote: SkipVoteView | null = null;
+  private skipVoters = new Set<SocketId>();
 
   recomputeLeader() {
     const leader = this.members
@@ -140,5 +141,49 @@ export class RoomStateService {
    */
   resetSkipVoteFor(videoId: string | null) {
     this.skipVote = null;
+    this.skipVoters.clear();
+  }
+
+  registerSkipVote(
+    socketId: SocketId,
+  ): { ok: boolean; reached: boolean } {
+    if (!this.playback.currentVideoId) {
+      return { ok: false, reached: false };
+    }
+
+    const member = this.members.find((m) => m.id === socketId);
+    if (!member) {
+      return { ok: false, reached: false };
+    }
+
+    if (
+      !this.skipVote ||
+      this.skipVote.videoId !== this.playback.currentVideoId
+    ) {
+      const membersCount = this.members.length;
+      const threshold = Math.max(
+        1,
+        Math.ceil(membersCount * 0.5),
+      );
+      this.skipVote = {
+        videoId: this.playback.currentVideoId,
+        yesCount: 0,
+        threshold,
+      };
+      this.skipVoters.clear();
+    }
+
+    if (this.skipVoters.has(socketId)) {
+      return { ok: false, reached: false };
+    }
+
+    this.skipVoters.add(socketId);
+    if (!this.skipVote) {
+      return { ok: false, reached: false };
+    }
+
+    this.skipVote.yesCount += 1;
+    const reached = this.skipVote.yesCount >= this.skipVote.threshold;
+    return { ok: true, reached };
   }
 }

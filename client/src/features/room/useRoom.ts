@@ -8,6 +8,7 @@ import type {
   QueueAddRejectedReason,
   QueueItem,
   PlaybackState,
+  SkipVoteView,
 } from "./types";
 
 export function useRoom() {
@@ -104,6 +105,19 @@ export function useRoom() {
       );
     };
 
+    const onSkipVoteUpdate = (payload: {
+      skipVote: SkipVoteView | null;
+    }) => {
+      setRoom((prev) =>
+        prev
+          ? {
+              ...prev,
+              skipVote: payload.skipVote ?? null,
+            }
+          : prev,
+      );
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("JOIN_ACCEPTED", onJoinAccepted);
@@ -114,6 +128,7 @@ export function useRoom() {
     socket.on("QUEUE_UPDATE", onQueueUpdate);
     socket.on("QUEUE_ADD_REJECTED", onQueueAddRejected);
     socket.on("PLAYBACK_UPDATE", onPlaybackUpdate);
+    socket.on("SKIP_VOTE_UPDATE", onSkipVoteUpdate);
 
     return () => {
       socket.off("connect", onConnect);
@@ -126,6 +141,7 @@ export function useRoom() {
       socket.off("QUEUE_UPDATE", onQueueUpdate);
       socket.off("QUEUE_ADD_REJECTED", onQueueAddRejected);
       socket.off("PLAYBACK_UPDATE", onPlaybackUpdate);
+      socket.off("SKIP_VOTE_UPDATE", onSkipVoteUpdate);
     };
   }, []);
 
@@ -149,6 +165,10 @@ export function useRoom() {
     socket.emit("PLAY_SEEK", { positionSec });
   };
 
+  const voteSkip = () => {
+    socket.emit("VOTE_SKIP", {});
+  };
+
   return {
     connected,
     joined,
@@ -161,5 +181,6 @@ export function useRoom() {
     queueError,
     playPauseToggle,
     seek,
+    voteSkip,
   };
 }

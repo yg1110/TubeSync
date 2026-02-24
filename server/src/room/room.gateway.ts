@@ -143,4 +143,34 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       serverNowMs: Date.now(),
     });
   }
+
+  @SubscribeMessage('VOTE_SKIP')
+  onVoteSkip(@ConnectedSocket() socket: Socket) {
+    const res = this.logic.voteSkip(socket.id);
+    if (!res.ok) return;
+
+    if (res.reached) {
+      const beforeChatLen = this.state.chat.length;
+      this.logic.startNext('VOTE_SKIP');
+
+      this.server.emit('QUEUE_UPDATE', { queue: this.state.queue });
+      this.server.emit('PLAYBACK_UPDATE', {
+        playback: this.state.playback,
+        serverNowMs: Date.now(),
+      });
+      this.server.emit('SKIP_VOTE_UPDATE', {
+        skipVote: this.state.skipVote,
+      });
+
+      for (let i = beforeChatLen; i < this.state.chat.length; i++) {
+        this.server.emit('CHAT_BROADCAST', {
+          message: this.state.chat[i],
+        });
+      }
+    } else {
+      this.server.emit('SKIP_VOTE_UPDATE', {
+        skipVote: this.state.skipVote,
+      });
+    }
+  }
 }

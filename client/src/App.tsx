@@ -20,6 +20,7 @@ export default function App() {
     queueError,
     playPauseToggle,
     seek,
+    voteSkip,
   } = useRoom();
   const showNicknameModal = connected && !joined;
   const myNickname =
@@ -92,6 +93,8 @@ export default function App() {
               lastPlaybackServerNowMs={room.lastPlaybackServerNowMs}
               onPlayPauseToggle={playPauseToggle}
               onSeek={seek}
+              skipVote={room.skipVote}
+              onVoteSkip={voteSkip}
             />
           </section>
 

@@ -114,6 +114,18 @@ export class RoomLogicService {
     }
   }
 
+  voteSkip(
+    socketId: SocketId,
+  ): { ok: boolean; reached: boolean } {
+    const member = this.state.members.find((m) => m.id === socketId);
+    if (!member) return { ok: false, reached: false };
+    if (!this.state.playback.currentVideoId) {
+      return { ok: false, reached: false };
+    }
+
+    return this.state.registerSkipVote(socketId);
+  }
+
   /** 일시정지 토글: 재생 중이면 일시정지, 일시정지면 재개 */
   playPauseToggle(socketId: SocketId): boolean {
     const member = this.state.members.find((m) => m.id === socketId);

@@ -25,6 +25,8 @@ export function VideoStage(props: {
   lastPlaybackServerNowMs?: number;
   onPlayPauseToggle: () => void;
   onSeek: (positionSec: number) => void;
+  skipVote: import("../types").SkipVoteView | null;
+  onVoteSkip: () => void;
 }) {
   const playerRef = useRef<YouTubePlayerState | null>(null);
   const [ready, setReady] = useState(false);
@@ -267,7 +269,7 @@ export function VideoStage(props: {
         {/* 클릭(일시정지/시간이동) 방지: iframe 위 오버레이 - 터치만 막고 오버레이 표시 시에는 클릭 통과 */}
         {!showOverlay && (
           <div
-            className="absolute inset-0 z-[1]"
+            className="absolute inset-0 z-1"
             style={{ pointerEvents: "all" }}
             aria-hidden
           />
@@ -283,9 +285,9 @@ export function VideoStage(props: {
           >
             {videoTitle ?? props.playback.currentVideoId ?? "—"}
           </h2>
-          <p className="text-xs text-gray-500 mt-1">
+          {/* <p className="text-xs text-gray-500 mt-1">
             추가한 유저 {currentAddedBy ?? "—"}
-          </p>
+          </p> */}
         </div>
         <div className="flex items-center gap-3 ml-4">
           <div className="flex flex-col items-end">
@@ -293,11 +295,13 @@ export function VideoStage(props: {
               Skip Vote
             </span>
             <span className="text-sm font-mono text-white">
-              {/* {props.playback.votesCount} / {props.playback.skipThreshold} */}
+              {props.skipVote
+                ? `${props.skipVote.yesCount} / ${props.skipVote.threshold}`
+                : `0 / 0`}
             </span>
           </div>
           <button
-            // onClick={props.onVoteSkip}
+            onClick={props.onVoteSkip}
             className="p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-colors text-white"
             title="Vote to skip"
           >
