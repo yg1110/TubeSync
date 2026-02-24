@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ListMusic, SkipForward } from "lucide-react";
 import type {
+  Member,
   PlaybackState,
   QueueItem,
+  SkipVoteView,
   SyncTickPayload,
-  SocketId,
 } from "../types";
 import { getPlaybackPositionSec } from "../types";
 import { socket } from "../../../api/socket";
@@ -26,7 +27,8 @@ export function VideoStage(props: {
   lastPlaybackServerNowMs?: number;
   onPlayPauseToggle: () => void;
   onSeek: (positionSec: number) => void;
-  skipVote: import("../types").SkipVoteView | null;
+  skipVote: SkipVoteView | null;
+  members: Member[];
   onVoteSkip: () => void;
 }) {
   const playerRef = useRef<YouTubePlayerState | null>(null);
@@ -294,9 +296,7 @@ export function VideoStage(props: {
               Skip Vote
             </span>
             <span className="text-sm font-mono text-white">
-              {props.skipVote
-                ? `${props.skipVote.yesCount} / ${props.skipVote.threshold}`
-                : `0 / 0`}
+              {`${props?.skipVote?.yesCount || 0} / ${Math.max(1, Math.ceil(props.members.length * 0.5))}`}
             </span>
           </div>
           <button

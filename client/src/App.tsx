@@ -93,6 +93,7 @@ export default function App() {
               onPlayPauseToggle={playPauseToggle}
               onSeek={seek}
               skipVote={room.skipVote}
+              members={room.members}
               onVoteSkip={voteSkip}
             />
           </section>
