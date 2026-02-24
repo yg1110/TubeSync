@@ -113,4 +113,29 @@ export class RoomLogicService {
       this.startNextInProgress = false;
     }
   }
+
+  /** 일시정지 토글: 재생 중이면 일시정지, 일시정지면 재개 */
+  playPauseToggle(socketId: SocketId): boolean {
+    const member = this.state.members.find((m) => m.id === socketId);
+    if (!member) return false;
+    if (!this.state.playback.currentVideoId) return false;
+
+    const now = Date.now();
+    if (this.state.playback.isPaused) {
+      this.state.resumePlayback(now);
+    } else {
+      this.state.pausePlayback(now);
+    }
+    return true;
+  }
+
+  /** 특정 초 위치로 이동 */
+  seek(socketId: SocketId, positionSec: number): boolean {
+    const member = this.state.members.find((m) => m.id === socketId);
+    if (!member) return false;
+    if (!this.state.playback.currentVideoId) return false;
+
+    this.state.seekPlayback(Date.now(), positionSec);
+    return true;
+  }
 }

@@ -52,7 +52,10 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     socket.emit('JOIN_ACCEPTED', {});
-    socket.emit('ROOM_STATE', { state: this.state.toView() });
+    socket.emit('ROOM_STATE', {
+      state: this.state.toView(),
+      serverNowMs: Date.now(),
+    });
 
     this.server.emit('MEMBERS_UPDATE', {
       leaderId: this.state.leaderId,
@@ -103,8 +106,11 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // 큐가 pop되었을 수도 있으니 한번 더 갱신
       this.server.emit('QUEUE_UPDATE', { queue: this.state.queue });
 
-      // playback 브로드캐스트
-      this.server.emit('PLAYBACK_UPDATE', { playback: this.state.playback });
+      // playback 브로드캐스트 (서버 시각 포함해 클라이언트 동기화용)
+      this.server.emit('PLAYBACK_UPDATE', {
+        playback: this.state.playback,
+        serverNowMs: Date.now(),
+      });
 
       // (지금은 투표 없음) skipVote는 null로 브로드캐스트하지 않아도 됨
 
@@ -113,5 +119,28 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.server.emit('CHAT_BROADCAST', { message: this.state.chat[i] });
       }
     }
+  }
+
+  @SubscribeMessage('PLAY_PAUSE_TOGGLE')
+  onPlayPauseToggle(@ConnectedSocket() socket: Socket) {
+    if (!this.logic.playPauseToggle(socket.id)) return;
+    this.server.emit('PLAYBACK_UPDATE', {
+      playback: this.state.playback,
+      serverNowMs: Date.now(),
+    });
+  }
+
+  @SubscribeMessage('PLAY_SEEK')
+  onPlaySeek(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() body: { positionSec: number },
+  ) {
+    const positionSec = Number(body?.positionSec);
+    if (Number.isNaN(positionSec) || positionSec < 0) return;
+    if (!this.logic.seek(socket.id, positionSec)) return;
+    this.server.emit('PLAYBACK_UPDATE', {
+      playback: this.state.playback,
+      serverNowMs: Date.now(),
+    });
   }
 }

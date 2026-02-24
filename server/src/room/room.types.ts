@@ -29,7 +29,12 @@ export interface QueueItem {
 
 export interface PlaybackState {
   currentVideoId: string | null;
+  /** 재생 시작 시점(서버 시각). 재생 중일 때 현재 재생 위치 = (now - videoStartedAtMs) / 1000 */
   videoStartedAtMs: number | null;
+  /** 일시정지 여부. true면 pausedAtMs 기준으로 위치 고정 */
+  isPaused: boolean;
+  /** 일시정지된 시점(서버 시각). isPaused일 때만 사용. 위치 = (pausedAtMs - videoStartedAtMs) / 1000 */
+  pausedAtMs: number | null;
 }
 
 export interface SkipVoteView {

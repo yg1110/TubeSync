@@ -16,7 +16,12 @@ export class RoomStateService {
 
   chat: ChatMessage[] = [];
   queue: QueueItem[] = [];
-  playback: PlaybackState = { currentVideoId: null, videoStartedAtMs: null };
+  playback: PlaybackState = {
+    currentVideoId: null,
+    videoStartedAtMs: null,
+    isPaused: false,
+    pausedAtMs: null,
+  };
   skipVote: SkipVoteView | null = null;
 
   recomputeLeader() {
@@ -73,8 +78,60 @@ export class RoomStateService {
     return item?.videoId ?? null;
   }
 
-  setPlayback(videoId: string | null, startedAtMs: number | null) {
-    this.playback = { currentVideoId: videoId, videoStartedAtMs: startedAtMs };
+  setPlayback(
+    videoId: string | null,
+    startedAtMs: number | null,
+    isPaused = false,
+    pausedAtMs: number | null = null,
+  ) {
+    this.playback = {
+      currentVideoId: videoId,
+      videoStartedAtMs: startedAtMs,
+      isPaused,
+      pausedAtMs,
+    };
+  }
+
+  /** 현재 재생 위치(초). 재생 중: (now - videoStartedAtMs)/1000, 일시정지: (pausedAtMs - videoStartedAtMs)/1000 */
+  getPlaybackPositionSec(nowMs: number): number | null {
+    const { currentVideoId, videoStartedAtMs, isPaused, pausedAtMs } =
+      this.playback;
+    if (!currentVideoId || videoStartedAtMs == null) return null;
+    if (isPaused && pausedAtMs != null) {
+      return Math.max(0, (pausedAtMs - videoStartedAtMs) / 1000);
+    }
+    return Math.max(0, (nowMs - videoStartedAtMs) / 1000);
+  }
+
+  /** 일시정지: 현재 위치를 고정 */
+  pausePlayback(nowMs: number) {
+    if (!this.playback.currentVideoId || this.playback.videoStartedAtMs == null)
+      return;
+    const positionSec = (nowMs - this.playback.videoStartedAtMs) / 1000;
+    this.playback.isPaused = true;
+    this.playback.pausedAtMs = nowMs;
+  }
+
+  /** 재생 재개: 고정된 위치에서 videoStartedAtMs 재계산 */
+  resumePlayback(nowMs: number) {
+    if (!this.playback.currentVideoId || !this.playback.isPaused) return;
+    const pos =
+      this.playback.pausedAtMs != null && this.playback.videoStartedAtMs != null
+        ? (this.playback.pausedAtMs - this.playback.videoStartedAtMs) / 1000
+        : 0;
+    this.playback.videoStartedAtMs = nowMs - pos * 1000;
+    this.playback.isPaused = false;
+    this.playback.pausedAtMs = null;
+  }
+
+  /** 특정 초 위치로 이동. 일시정지 상태면 그 위치에서 일시정지 유지 */
+  seekPlayback(nowMs: number, positionSec: number) {
+    if (!this.playback.currentVideoId) return;
+    const sec = Math.max(0, positionSec);
+    this.playback.videoStartedAtMs = nowMs - sec * 1000;
+    if (this.playback.isPaused) {
+      this.playback.pausedAtMs = nowMs;
+    }
   }
 
   /**

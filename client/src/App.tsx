@@ -22,6 +22,8 @@ export default function App() {
     sendChat,
     addToQueue,
     queueError,
+    playPauseToggle,
+    seek,
   } = useRoom();
   const showNicknameModal = connected && !joined;
 
@@ -58,7 +60,13 @@ export default function App() {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <PresencePanel leaderId={room.leaderId} members={room.members} />
         <QueuePanel queue={room.queue} onAdd={addToQueue} error={queueError} />
-        <VideoStage playback={room.playback} leaderId={room.leaderId} />
+        <VideoStage
+          playback={room.playback}
+          leaderId={room.leaderId}
+          lastPlaybackServerNowMs={room.lastPlaybackServerNowMs}
+          onPlayPauseToggle={playPauseToggle}
+          onSeek={seek}
+        />
       </div>
 
       <ChatPanel messages={room.chat} onSend={sendChat} />

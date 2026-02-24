@@ -37,8 +37,14 @@ export function useRoom() {
       setJoined(false);
     };
 
-    const onRoomState = (payload: { state: RoomStateView }) => {
-      setRoom(payload.state);
+    const onRoomState = (payload: {
+      state: RoomStateView;
+      serverNowMs?: number;
+    }) => {
+      setRoom({
+        ...payload.state,
+        lastPlaybackServerNowMs: payload.serverNowMs ?? payload.state.lastPlaybackServerNowMs,
+      });
     };
 
     const onMembersUpdate = (payload: {
@@ -78,9 +84,18 @@ export function useRoom() {
       setQueueError(payload.reason);
     };
 
-    const onPlaybackUpdate = (payload: { playback: PlaybackState }) => {
+    const onPlaybackUpdate = (payload: {
+      playback: PlaybackState;
+      serverNowMs?: number;
+    }) => {
       setRoom((prev) =>
-        prev ? { ...prev, playback: payload.playback } : prev,
+        prev
+          ? {
+              ...prev,
+              playback: payload.playback,
+              lastPlaybackServerNowMs: payload.serverNowMs ?? prev.lastPlaybackServerNowMs,
+            }
+          : prev,
       );
     };
 
@@ -121,6 +136,14 @@ export function useRoom() {
     socket.emit("QUEUE_ADD", { youtubeUrl });
   };
 
+  const playPauseToggle = () => {
+    socket.emit("PLAY_PAUSE_TOGGLE", {});
+  };
+
+  const seek = (positionSec: number) => {
+    socket.emit("PLAY_SEEK", { positionSec });
+  };
+
   return {
     connected,
     joined,
@@ -130,5 +153,7 @@ export function useRoom() {
     sendChat,
     addToQueue,
     queueError,
+    playPauseToggle,
+    seek,
   };
 }

@@ -7,12 +7,16 @@ declare global {
 }
 export {};
 
+/** YT.PlayerState: UNSTARTED= -1, ENDED=0, PLAYING=1, PAUSED=2, BUFFERING=3, CUED=5 */
 export type YouTubePlayerState = {
   cueVideoById: (opts: { videoId: string; startSeconds?: number }) => void;
   loadVideoById: (opts: { videoId: string; startSeconds?: number }) => void;
   getCurrentTime: () => number;
+  getDuration: () => number;
+  getPlayerState: () => number;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   playVideo: () => void;
+  pauseVideo: () => void;
   mute: () => void;
 };
 
@@ -46,19 +50,28 @@ export function loadYouTubeIframeApi(): Promise<void> {
 export async function createYouTubePlayer(params: {
   elementId: string;
   videoId?: string;
+  /** 이미 재생 중인 영상이면 시작 초(정수). embed의 &t= 와 동일, playerVars.start 로 전달 */
+  startSeconds?: number;
   events?: PlayerEvents;
 }): Promise<YouTubePlayerState> {
   await loadYouTubeIframeApi();
+
+  const start =
+    params.startSeconds != null && params.startSeconds > 0
+      ? Math.floor(params.startSeconds)
+      : undefined;
 
   const player = new window.YT.Player(params.elementId, {
     videoId: params.videoId,
     playerVars: {
       autoplay: 1,
-      controls: 0,
-      disablekb: 1,
+      controls: 0, // 컨트롤 숨김 → 일시정지/시간이동/볼륨 등 불가
+      disablekb: 1, // 키보드 조작 비활성화
+      fs: 0, // 풀스크린 버튼 숨김
       rel: 0,
       modestbranding: 1,
       playsinline: 1,
+      ...(start != null && { start }),
     },
     events: {
       onReady: () => params.events?.onReady?.(),
