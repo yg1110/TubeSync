@@ -35,8 +35,8 @@ export function ChatPanel(props: {
   };
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="p-4 border-b border-white/5 flex items-center gap-2">
+    <div className="flex flex-col flex-1 overflow-hidden pb-20 lg:pb-0">
+      <div className="p-3 sm:p-4 border-b border-white/5 flex items-center gap-2">
         <MessageSquare size={16} className="text-gray-500" />
         <h2 className="text-xs font-bold text-white uppercase tracking-widest">
           Live Chat
@@ -45,7 +45,7 @@ export function ChatPanel(props: {
 
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto p-4 max-h-[calc(100dvh-285px)] space-y-4 custom-scrollbar"
+        className="flex-1 min-h-[40vh] lg:min-h-0 overflow-y-auto p-3 sm:p-4 pb-6 lg:pb-4 space-y-4 custom-scrollbar"
       >
         {props.messages.map((msg) => (
           <div key={msg.id} className="flex flex-col gap-1">
@@ -78,7 +78,10 @@ export function ChatPanel(props: {
         ))}
       </div>
 
-      <form onSubmit={submit} className="p-4 bg-black/20">
+      <form
+        onSubmit={submit}
+        className="fixed left-0 right-0 bottom-0 lg:static p-3 sm:p-4 bg-black/20 lg:bg-[#111214]"
+      >
         <div className="relative">
           <input
             type="text"

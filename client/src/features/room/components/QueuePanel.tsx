@@ -26,7 +26,7 @@ export function QueuePanel(props: {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <ListMusic size={18} className="text-red-500" />
           <h2 className="text-sm font-bold text-white uppercase tracking-widest">
@@ -38,17 +38,20 @@ export function QueuePanel(props: {
         </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col sm:flex-row gap-2"
+      >
         <input
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Paste YouTube URL here..."
-          className="flex-1 bg-[#151619] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
+          className="flex-1 bg-[#151619] border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-600/50 transition-colors"
         />
         <button
           type="submit"
-          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-lg shadow-red-600/10"
+          className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-600/10"
         >
           <Plus size={18} />
           <span className="text-sm font-semibold">Add</span>
