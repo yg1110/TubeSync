@@ -17,6 +17,8 @@ const DRIFT_THRESHOLD_SEC = 1.5;
 
 /** YT.PlayerState.PLAYING = 1 */
 const YT_PLAYING = 1;
+/** YT.PlayerState.ENDED = 0 */
+const YT_ENDED = 0;
 
 export function VideoStage(props: {
   playback: PlaybackState;
@@ -44,7 +46,6 @@ export function VideoStage(props: {
 
   const isValidVideoId = (id: string | null): id is string =>
     !!id && /^[A-Za-z0-9_-]{11}$/.test(id);
-
   const shouldMountPlayer = isValidVideoId(props.playback.currentVideoId);
 
   // 유튜브 제목 oEmbed 조회
@@ -93,8 +94,12 @@ export function VideoStage(props: {
             if (cancelled) return;
             setReady(true);
           },
-          onStateChange: () => {
-            // 서버가 재생/일시정지를 관리하므로 로컬 상태 변경은 무시
+          onStateChange: (state) => {
+            // 영상이 끝나면 서버에 알려서 다음 큐 또는 빈 상태로 전환
+            if (state === YT_ENDED) {
+              socket.emit("VIDEO_ENDED", {});
+            }
+            // 재생/일시정지는 여전히 서버가 관리
           },
         },
       });
@@ -280,8 +285,8 @@ export function VideoStage(props: {
           </h2>
           <p className="text-xs text-gray-500 mt-1">
             {props.playback.addedBy
-              ? `추가한 유저: ${props.playback.addedBy}`
-              : "추가한 유저 정보 없음"}
+              ? `Added by: ${props.playback.addedBy}`
+              : ""}
           </p>
         </div>
         <div className="flex items-center gap-3 ml-4">

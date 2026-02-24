@@ -4,7 +4,9 @@ import { ListMusic, Plus } from "lucide-react";
 import type { QueueAddRejectedReason, QueueItem } from "../types";
 
 function errorMessage(e: QueueAddRejectedReason) {
-  return e === "INVALID_URL" ? "유효한 유튜브 링크가 아닙니다." : "큐 추가 실패";
+  return e === "INVALID_URL"
+    ? "유효한 유튜브 링크가 아닙니다."
+    : "큐 추가 실패";
 }
 
 export function QueuePanel(props: {
@@ -74,7 +76,7 @@ export function QueuePanel(props: {
                 <h4 className="text-sm text-gray-300 truncate group-hover:text-white transition-colors font-mono">
                   {video.videoId}
                 </h4>
-                <p className="text-[10px] text-gray-500 mt-0.5 uppercase tracking-tighter">
+                <p className="text-[10px] text-gray-500 mt-0.5 tracking-tighter">
                   Added by {video.addedBy}
                 </p>
               </div>

@@ -173,4 +173,27 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
     }
   }
+
+  @SubscribeMessage('VIDEO_ENDED')
+  onVideoEnded(@ConnectedSocket() socket: Socket) {
+    // 리더만 영상 종료를 트리거할 수 있게 제한
+    if (!this.state.leaderId || socket.id !== this.state.leaderId) return;
+
+    const beforeChatLen = this.state.chat.length;
+    this.logic.startNext('VIDEO_ENDED');
+
+    // 큐 및 재생 상태 브로드캐스트
+    this.server.emit('QUEUE_UPDATE', { queue: this.state.queue });
+    this.server.emit('PLAYBACK_UPDATE', {
+      playback: this.state.playback,
+      serverNowMs: Date.now(),
+    });
+
+    // SYSTEM 메시지 등 chat 변화분 브로드캐스트
+    for (let i = beforeChatLen; i < this.state.chat.length; i++) {
+      this.server.emit('CHAT_BROADCAST', {
+        message: this.state.chat[i],
+      });
+    }
+  }
 }
