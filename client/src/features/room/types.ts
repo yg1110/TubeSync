@@ -37,13 +37,11 @@ export interface SkipVoteView {
 }
 
 export interface RoomStateView {
-  leaderId: SocketId | null;
   members: Member[];
   chat: ChatMessage[];
   queue: QueueItem[];
   playback: PlaybackState;
   skipVote: SkipVoteView | null;
-  /** PLAYBACK_UPDATE 수신 시 서버 시각. 동기화 계산용 */
   lastPlaybackServerNowMs?: number;
 }
 

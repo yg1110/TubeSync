@@ -11,7 +11,6 @@ import type {
 
 @Injectable()
 export class RoomStateService {
-  leaderId: SocketId | null = null;
   members: Member[] = [];
 
   chat: ChatMessage[] = [];
@@ -26,16 +25,8 @@ export class RoomStateService {
   skipVote: SkipVoteView | null = null;
   private skipVoters = new Set<SocketId>();
 
-  recomputeLeader() {
-    const leader = this.members
-      .slice()
-      .sort((a, b) => a.joinedAtMs - b.joinedAtMs)[0];
-    this.leaderId = leader?.id ?? null;
-  }
-
   toView(): RoomStateView {
     return {
-      leaderId: this.leaderId,
       members: this.members,
       chat: this.chat,
       queue: this.queue,
@@ -147,9 +138,7 @@ export class RoomStateService {
     this.skipVoters.clear();
   }
 
-  registerSkipVote(
-    socketId: SocketId,
-  ): { ok: boolean; reached: boolean } {
+  registerSkipVote(socketId: SocketId): { ok: boolean; reached: boolean } {
     if (!this.playback.currentVideoId) {
       return { ok: false, reached: false };
     }
@@ -164,10 +153,7 @@ export class RoomStateService {
       this.skipVote.videoId !== this.playback.currentVideoId
     ) {
       const membersCount = this.members.length;
-      const threshold = Math.max(
-        1,
-        Math.ceil(membersCount * 0.5),
-      );
+      const threshold = Math.max(1, Math.ceil(membersCount * 0.5));
       this.skipVote = {
         videoId: this.playback.currentVideoId,
         yesCount: 0,

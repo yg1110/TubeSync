@@ -23,7 +23,6 @@ const YT_ENDED = 0;
 export function VideoStage(props: {
   playback: PlaybackState;
   queue?: QueueItem[];
-  leaderId: SocketId | null;
   lastPlaybackServerNowMs?: number;
   onPlayPauseToggle: () => void;
   onSeek: (positionSec: number) => void;

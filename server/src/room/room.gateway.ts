@@ -34,7 +34,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleDisconnect(socket: Socket) {
     this.logic.leave(socket.id);
     this.server.emit('MEMBERS_UPDATE', {
-      leaderId: this.state.leaderId,
       members: this.state.members,
     });
   }
@@ -58,7 +57,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
 
     this.server.emit('MEMBERS_UPDATE', {
-      leaderId: this.state.leaderId,
       members: this.state.members,
     });
   }
@@ -176,9 +174,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('VIDEO_ENDED')
   onVideoEnded(@ConnectedSocket() socket: Socket) {
-    // 리더만 영상 종료를 트리거할 수 있게 제한
-    if (!this.state.leaderId || socket.id !== this.state.leaderId) return;
-
     const beforeChatLen = this.state.chat.length;
     this.logic.startNext('VIDEO_ENDED');
 

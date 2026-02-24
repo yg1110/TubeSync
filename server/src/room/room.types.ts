@@ -46,7 +46,6 @@ export interface SkipVoteView {
 }
 
 export interface RoomStateView {
-  leaderId: SocketId | null;
   members: Member[];
   chat: ChatMessage[];
   queue: QueueItem[];

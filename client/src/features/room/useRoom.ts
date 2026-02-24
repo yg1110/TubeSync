@@ -54,15 +54,11 @@ export function useRoom() {
       });
     };
 
-    const onMembersUpdate = (payload: {
-      leaderId: string | null;
-      members: Member[];
-    }) => {
+    const onMembersUpdate = (payload: { members: Member[] }) => {
       setRoom((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          leaderId: payload.leaderId,
           members: payload.members,
         };
       });

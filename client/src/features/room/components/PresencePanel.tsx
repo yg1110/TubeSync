@@ -1,11 +1,7 @@
 import { Users, Crown } from "lucide-react";
-import type { Member, SocketId } from "../types";
+import type { Member } from "../types";
 
-export function PresencePanel(props: {
-  leaderId: SocketId | null;
-  members: Member[];
-  myId?: string;
-}) {
+export function PresencePanel(props: { members: Member[]; myId?: string }) {
   const myId = props.myId ?? "";
 
   return (
@@ -26,9 +22,6 @@ export function PresencePanel(props: {
                 : "bg-white/5 border-white/10 text-gray-400"
             }`}
           >
-            {props.leaderId === m.id && (
-              <Crown size={12} className="text-yellow-500" />
-            )}
             {m.nickname}
           </div>
         ))}

@@ -33,14 +33,12 @@ export class RoomLogicService {
     if (dup) return { ok: false, reason: 'NICKNAME_TAKEN' };
 
     this.state.members.push({ id: socketId, nickname, joinedAtMs: Date.now() });
-    this.state.recomputeLeader();
     return { ok: true };
   }
 
   leave(socketId: SocketId) {
     const idx = this.state.members.findIndex((m) => m.id === socketId);
     if (idx >= 0) this.state.members.splice(idx, 1);
-    this.state.recomputeLeader();
   }
 
   addChat(
@@ -76,7 +74,7 @@ export class RoomLogicService {
     this.startNextInProgress = true;
     try {
       // RoomStateService는 별도 서비스라 eslint가 타입 추론을 완전히 따라가지 못하므로, 여기서는 안전한 래핑 호출임을 명시한다.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+
       const nextItem: QueueItem | null = this.state.dequeueNextItem();
 
       if (!nextItem) {

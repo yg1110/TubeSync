@@ -89,7 +89,6 @@ export default function App() {
             <VideoStage
               playback={room.playback}
               queue={room.queue}
-              leaderId={room.leaderId}
               lastPlaybackServerNowMs={room.lastPlaybackServerNowMs}
               onPlayPauseToggle={playPauseToggle}
               onSeek={seek}
@@ -109,11 +108,7 @@ export default function App() {
 
         <aside className="w-80 border-l border-white/5 bg-[#111214] flex flex-col shrink-0">
           <div className="p-4 border-b border-white/5">
-            <PresencePanel
-              leaderId={room.leaderId}
-              members={room.members}
-              myId={myId}
-            />
+            <PresencePanel members={room.members} myId={myId} />
           </div>
 
           <div className="flex-1 flex flex-col overflow-hidden min-h-0">
